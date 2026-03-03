@@ -1,5 +1,6 @@
 🏗 Project Roadmap
 📋 Phase 1: Planning & Design
+
 [x] Questionnaire — Сбор требований и анкетирование.
 
 [x] Design Document — Составление основного диздока проекта.

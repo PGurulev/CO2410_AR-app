@@ -1,46 +1,47 @@
 🏗 Project Roadmap
+
 📋 Phase 1: Planning & Design
 
-[x] Questionnaire — Сбор требований и анкетирование.
+[x] Questionnaire — Requirements gathering and survey analysis.
 
-[x] Design Document — Составление основного диздока проекта.
+[x] Design Document — Drafting the core project design documentation.
 
-[ ] Research on Unity Functionality — Исследование необходимых инструментов и функций движка.
+[ ] Research on Unity Functionality — Investigating necessary engine tools and features.
 
 💻 Phase 2: Technical Setup & Infrastructure
 
-[ ] Version Control Implementation — Настройка Git/GitHub и стратегии ветвления.
+[ ] Version Control Implementation — Setting up Git/GitHub and branching strategies.
 
-[ ] Unity Realization — Базовая настройка проекта в Unity.
+[ ] Unity Realization — Initial project environment setup and configuration.
 
 📍 Phase 3: Location & AR Integration
 
-[ ] Location Realization — Подготовка данных о реальной локации.
+[ ] Location Realization — Preparing real-world location data.
 
-[ ] Prototyping based on real location — Создание прототипа на основе местности.
+[ ] Prototyping Based on Real Location — Creating a location-based site prototype.
 
-[ ] Anchor points positioning — Расстановка и настройка точек привязки (анкоров).
+[ ] Anchor Points Positioning — Configuring and placing spatial anchors.
 
-[ ] Realization inside Unity engine — Финальная сборка локации в движке.
+[ ] Realization Inside Unity Engine — Final integration of location data into the engine.
 
 🛠 Phase 4: Implementation & UI
 
-[ ] UI Prototyping and Realization — Проектирование и внедрение интерфейса пользователя.
+[ ] UI Prototyping and Realization — Designing and implementing the user interface.
 
-[ ] Implementation Realization — Программирование основной логики.
+[ ] Implementation Realization — Coding the core application logic.
 
-[ ] Project Prototype Realization — Сборка работающего прототипа проекта.
+[ ] Project Prototype Realization — Assembling the functional project prototype.
 
 🎮 Phase 5: Additional Features (Minigame)
 
-[ ] Minigame Design Document — Документация игровой механики.
+[ ] Minigame Design Document — Documentation of mechanics and gameplay loops.
 
-[ ] Minigame Prototype — Техническое демо мини-игры.
+[ ] Minigame Prototype — Technical demonstration of the minigame.
 
-[ ] Minigame Realization — Полная интеграция мини-игры в основной проект.
+[ ] Minigame Realization — Full integration of the minigame into the main project.
 
 🚀 Phase 6: Finalization
 
-[ ] Final Release — Полировка и финальная сборка.
+[ ] Final Release — Final polishing, bug fixing, and build deployment.
 
-[ ] Presentation of Project — Подготовка материалов и презентация.
+[ ] Presentation of Project — Preparing presentation materials and final showcase.

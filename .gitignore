@@ -35,6 +35,7 @@
 
 # Unity3D generated file on crash reports
 sysinfo.txt
+mono_crash.*
 
 # Builds
 *.apk
@@ -42,17 +43,15 @@ sysinfo.txt
 *.unitypackage
 *.app
 
+# Addressables / remote content build output (если включите Addressables)
+[Ss]erver[Dd]ata/
+
 # Crashlytics
 crashlytics-build.properties
 
 # IDE / Editor
 .vs/
 .idea/
-*.csproj
-*.sln
-*.suo
-*.user
-*.userprefs
 
 # OS
 .DS_Store
@@ -69,7 +68,3 @@ Thumbs.db
 
 # Gradle (Android)
 .gradle/
-
-# Visual Studio cache
-*.VC.db
-*.VC.VC.opendb

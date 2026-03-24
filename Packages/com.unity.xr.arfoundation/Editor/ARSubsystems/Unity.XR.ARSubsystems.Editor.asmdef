@@ -1,0 +1,14 @@
+{
+    "name": "Unity.XR.ARSubsystems.Editor",
+    "references": [
+        "Unity.XR.ARSubsystems",
+        "Unity.XR.Management",
+        "Unity.XR.Management.Editor"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}

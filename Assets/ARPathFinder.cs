@@ -29,6 +29,7 @@ public class ARPathFinder : MonoBehaviour
         if (target == null || cameraTransform == null) return;
 
         // Ищем ближайшие точки НА сетке NavMesh в радиусе 5 метров (увеличили радиус)
+        // Try to finding points on NavMesh net within a radius of 5 meters (increased)
         NavMeshHit startHit, targetHit;
 
         bool validStart = NavMesh.SamplePosition(cameraTransform.position, out startHit, 5.0f, NavMesh.AllAreas);
@@ -53,6 +54,7 @@ public class ARPathFinder : MonoBehaviour
         else
         {
             // Если видишь это - значит ты СЛИШКОМ далеко от синей сетки
+            //If user seen this, it means that user SO far from blue net
             Debug.LogWarning($"Точки вне NavMesh! Старт: {validStart}, Цель: {validTarget}");
             line.positionCount = 0;
         }
@@ -63,3 +65,4 @@ public class ARPathFinder : MonoBehaviour
         target = newTarget;
     }
 }
+//Roman: why is there a russian comments here? The same applies in "text" as in 58th line.

@@ -1,63 +1,127 @@
 ﻿using UnityEngine;
 using UnityEngine.AI;
+using Unity.XR.CoreUtils;
 
 public class ARPathFinder : MonoBehaviour
 {
-    [Header("Настройки навигации")]
+    [Header("Navigation settings")]
     public Transform target;
+
+    [Tooltip("Max distance to snap a point onto NavMesh (targets / probes).")]
+    [SerializeField] private float navMeshSampleRadius = 50.0f;
+
+    [Tooltip("If true, only draw when a full path exists (avoids odd partial paths).")]
+    [SerializeField] private bool requireCompletePath = true;
 
     private LineRenderer line;
     private NavMeshPath path;
     private Transform cameraTransform;
+    private XROrigin cachedXrOrigin;
 
     void Start()
     {
         line = GetComponent<LineRenderer>();
         path = new NavMeshPath();
+        ResolveCameraReference();
+    }
+
+    void OnEnable()
+    {
+        ResolveCameraReference();
+    }
+
+    private void ResolveCameraReference()
+    {
+        if (cachedXrOrigin == null)
+        {
+            cachedXrOrigin = FindFirstObjectByType<XROrigin>();
+        }
+
+        if (cachedXrOrigin != null && cachedXrOrigin.Camera != null)
+        {
+            cameraTransform = cachedXrOrigin.Camera.transform;
+            return;
+        }
 
         if (Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
         }
-        else
-        {
-        }
     }
 
     void Update()
     {
-        if (target == null || cameraTransform == null) return;
-
-        // Ищем ближайшие точки НА сетке NavMesh в радиусе 5 метров (увеличили радиус)
-        // Try to finding points on NavMesh net within a radius of 5 meters (increased)
-        NavMeshHit startHit, targetHit;
-
-        bool validStart = NavMesh.SamplePosition(cameraTransform.position, out startHit, 5.0f, NavMesh.AllAreas);
-        bool validTarget = NavMesh.SamplePosition(target.position, out targetHit, 5.0f, NavMesh.AllAreas);
-
-        if (validStart && validTarget)
+        if (target == null)
         {
-            if (NavMesh.CalculatePath(startHit.position, targetHit.position, NavMesh.AllAreas, path))
+            return;
+        }
+
+        if (cameraTransform == null)
+        {
+            ResolveCameraReference();
+            if (cameraTransform == null)
             {
-                line.positionCount = path.corners.Length;
-                for (int i = 0; i < path.corners.Length; i++)
-                {
-                    line.SetPosition(i, path.corners[i] + Vector3.up * 0.05f);
-                }
-            }
-            else
-            {
-                Debug.LogWarning("Путь не найден, хотя точки на сетке.");
-                line.positionCount = 0;
+                return;
             }
         }
-        else
+
+        if (!NavMesh.SamplePosition(target.position, out NavMeshHit targetHit, navMeshSampleRadius, NavMesh.AllAreas))
         {
-            // Если видишь это - значит ты СЛИШКОМ далеко от синей сетки
-            //If user seen this, it means that user SO far from blue net
-            Debug.LogWarning($"Точки вне NavMesh! Старт: {validStart}, Цель: {validTarget}");
             line.positionCount = 0;
+            return;
         }
+
+        if (!TryFindStartHit(cameraTransform.position, targetHit, out NavMeshHit startHit))
+        {
+            line.positionCount = 0;
+            return;
+        }
+
+        if (path.corners.Length == 0)
+        {
+            line.positionCount = 0;
+            return;
+        }
+
+        line.positionCount = path.corners.Length;
+        for (int i = 0; i < path.corners.Length; i++)
+        {
+            line.SetPosition(i, path.corners[i] + Vector3.up * 0.05f);
+        }
+    }
+
+    private bool TryFindStartHit(Vector3 cameraWorld, NavMeshHit targetHit, out NavMeshHit startHit)
+    {
+        startHit = default;
+        float[] radii = new float[] { 2f, 8f, 25f, navMeshSampleRadius, 120f };
+
+        for (int step = 0; step <= 8; step++)
+        {
+            float t = step / 8f;
+            Vector3 probe = Vector3.Lerp(cameraWorld, targetHit.position, t);
+
+            for (int ri = 0; ri < radii.Length; ri++)
+            {
+                if (!NavMesh.SamplePosition(probe, out startHit, radii[ri], NavMesh.AllAreas))
+                {
+                    continue;
+                }
+
+                if (!NavMesh.CalculatePath(startHit.position, targetHit.position, NavMesh.AllAreas, path))
+                {
+                    continue;
+                }
+
+                if (requireCompletePath && path.status != NavMeshPathStatus.PathComplete)
+                {
+                    continue;
+                }
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void SetTarget(Transform newTarget)
@@ -65,4 +129,3 @@ public class ARPathFinder : MonoBehaviour
         target = newTarget;
     }
 }
-//Roman: why is there a russian comments here? The same applies in "text" as in 58th line.

@@ -14,4 +14,6 @@ EditorBuildSettings:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: a47bd708a72781e4da7787015c4a94d1, type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 30f8123f6e69aef4aaebddbe317d4b8a, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: ae8fc990a19fa84449d3128dcc2a7095, type: 2}
+    xr.sdk.mock-hmd.settings: {fileID: 11400000, guid: 717b10206bf02184484efb135c9e9c81, type: 2}
   m_UseUCBPForAssetBundles: 0

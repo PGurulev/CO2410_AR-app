@@ -3,14 +3,14 @@ using UnityEngine.UI;
 
 public class StartButtonManager : MonoBehaviour
 {
-    //straight ahead — references to Start button and panels it controls
+    // references to Start button and panels it controls
     [SerializeField] private Button startButton;
     [SerializeField] private GameObject destinationDropdown;
-    [SerializeField] private GameObject optionsButton;
+    [SerializeField] private GameObject accessibilityDropdown;
 
     private bool menusVisible;
 
-    //straight ahead — find UI objects by name if not assigned, hide menus, subscribe
+    // find UI objects by name if not assigned, hide menus, subscribe
     void Start()
     {
         if (startButton == null)
@@ -31,16 +31,16 @@ public class StartButtonManager : MonoBehaviour
             }
         }
 
-        if (optionsButton == null)
+        if (accessibilityDropdown == null)
         {
-            GameObject obj = GameObject.Find("SettingsButton");
+            GameObject obj = GameObject.Find("AccessibilityDropdown");
             if (obj != null)
             {
-                optionsButton = obj;
+                accessibilityDropdown = obj;
             }
         }
 
-        //straight ahead — hide everything until Start is pressed
+        // hide everything until Start is pressed
         SetMenusVisible(false);
 
         if (startButton != null)
@@ -53,7 +53,7 @@ public class StartButtonManager : MonoBehaviour
         }
     }
 
-    //straight ahead — clean up listener on destroy
+    // clean up listener on destroy
     void OnDestroy()
     {
         if (startButton != null)
@@ -62,14 +62,14 @@ public class StartButtonManager : MonoBehaviour
         }
     }
 
-    //straight ahead — toggle menus visibility on each click
+    // toggle menus visibility on each click
     private void OnStartClicked()
     {
         menusVisible = !menusVisible;
         SetMenusVisible(menusVisible);
     }
 
-    //straight ahead — show or hide destination dropdown and options button
+    // show or hide both dropdowns
     private void SetMenusVisible(bool visible)
     {
         if (destinationDropdown != null)
@@ -77,9 +77,9 @@ public class StartButtonManager : MonoBehaviour
             destinationDropdown.SetActive(visible);
         }
 
-        if (optionsButton != null)
+        if (accessibilityDropdown != null)
         {
-            optionsButton.SetActive(visible);
+            accessibilityDropdown.SetActive(visible);
         }
     }
 }

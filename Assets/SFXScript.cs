@@ -7,7 +7,7 @@ public class SFXScript : MonoBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip changeClip;
 
-    //straight ahead — find dropdown and audio source, subscribe to events
+    // find dropdown and audio source, subscribe to events
     void Start()
     {
         if (dropdown == null)
@@ -34,7 +34,7 @@ public class SFXScript : MonoBehaviour
         }
     }
 
-    //straight ahead — unsubscribe listener on destroy
+    // unsubscribe listener on destroy
     void OnDestroy()
     {
         if (dropdown != null)
@@ -43,7 +43,7 @@ public class SFXScript : MonoBehaviour
         }
     }
 
-    //straight ahead — play sound when dropdown value changes
+    // play sound when dropdown value changes
     private void OnDropdownChanged(int index)
     {
         if (changeClip == null)

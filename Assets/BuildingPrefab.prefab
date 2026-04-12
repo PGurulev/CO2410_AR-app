@@ -24846,3 +24846,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ARPathFinder
   target: {fileID: 2389090573462173795}
+  navMeshSampleRadius: 50
+  requireCompletePath: 1

@@ -4,28 +4,21 @@ using UnityEngine.UI;
 
 public class AccessibilityManager : MonoBehaviour
 {
-    //straight ahead — settings button that shows/hides its toggle children
-    [Header("Options Modal")]
-    [SerializeField] private Button settingsButton;
-    [SerializeField] private GameObject bigTextToggleObj;
-    [SerializeField] private GameObject contrastToggleObj;
+    // accessibility dropdown reference
+    [Header("Accessibility Dropdown")]
+    [SerializeField] private TMP_Dropdown accessibilityDropdown;
 
-    //straight ahead — toggle components for listening to value changes
-    [Header("Toggles")]
-    [SerializeField] private Toggle bigTextToggle;
-    [SerializeField] private Toggle contrastToggle;
-
-    //straight ahead — all TMP texts and UI backgrounds affected by accessibility
+    // all TMP texts and UI backgrounds affected by accessibility
     [Header("UI elements")]
     [SerializeField] private TMP_Text[] uiTexts;
     [SerializeField] private Image[] uiBackgrounds;
 
-    //straight ahead — font sizes for normal and big text modes
+    // font sizes for normal and big text modes
     [Header("Big Text settings")]
     [SerializeField] private float normalFontSize = 14f;
     [SerializeField] private float bigFontSize = 24f;
 
-    //straight ahead — colors for contrast mode
+    // colors for contrast mode
     [Header("Contrast settings")]
     [SerializeField] private Color contrastTextColor = Color.yellow;
     [SerializeField] private Color contrastBgColor = Color.black;
@@ -33,82 +26,50 @@ public class AccessibilityManager : MonoBehaviour
     private Color[] originalTextColors;
     private Color[] originalBgColors;
     private float[] originalFontSizes;
+    private bool bigTextActive;
+    private bool contrastActive;
 
-    //straight ahead — find objects by name, hide toggles, wire up events
+    // find dropdown by name, populate options, subscribe
     void Start()
     {
-        if (settingsButton == null)
+        if (accessibilityDropdown == null)
         {
-            GameObject obj = GameObject.Find("SettingsButton");
+            GameObject obj = GameObject.Find("AccessibilityDropdown");
             if (obj != null)
             {
-                settingsButton = obj.GetComponent<Button>();
+                accessibilityDropdown = obj.GetComponent<TMP_Dropdown>();
             }
         }
 
-        if (bigTextToggleObj == null)
+        if (accessibilityDropdown != null)
         {
-            GameObject obj = GameObject.Find("BigTextT");
-            if (obj != null)
+            accessibilityDropdown.ClearOptions();
+            accessibilityDropdown.AddOptions(new System.Collections.Generic.List<string>
             {
-                bigTextToggleObj = obj;
-                bigTextToggle = obj.GetComponent<Toggle>();
-            }
+                "Accessibility",
+                "Big Text",
+                "Contrast Colors"
+            });
+            accessibilityDropdown.onValueChanged.AddListener(OnAccessibilityChanged);
         }
-
-        if (contrastToggleObj == null)
+        else
         {
-            GameObject obj = GameObject.Find("ContrastT");
-            if (obj != null)
-            {
-                contrastToggleObj = obj;
-                contrastToggle = obj.GetComponent<Toggle>();
-            }
-        }
-
-        //straight ahead — hide toggles until settings button is pressed
-        SetTogglesVisible(false);
-
-        if (settingsButton != null)
-        {
-            settingsButton.onClick.AddListener(OnSettingsClicked);
-        }
-
-        if (bigTextToggle != null)
-        {
-            bigTextToggle.isOn = false;
-            bigTextToggle.onValueChanged.AddListener(OnBigTextToggled);
-        }
-
-        if (contrastToggle != null)
-        {
-            contrastToggle.isOn = false;
-            contrastToggle.onValueChanged.AddListener(OnContrastToggled);
+            Debug.LogError("AccessibilityManager: AccessibilityDropdown not found.");
         }
 
         CacheOriginalValues();
     }
 
-    //straight ahead — remove all listeners on destroy
+    // remove listener on destroy
     void OnDestroy()
     {
-        if (settingsButton != null)
+        if (accessibilityDropdown != null)
         {
-            settingsButton.onClick.RemoveListener(OnSettingsClicked);
-        }
-
-        if (bigTextToggle != null)
-        {
-            bigTextToggle.onValueChanged.RemoveListener(OnBigTextToggled);
-        }
-
-        if (contrastToggle != null)
-        {
-            contrastToggle.onValueChanged.RemoveListener(OnContrastToggled);
+            accessibilityDropdown.onValueChanged.RemoveListener(OnAccessibilityChanged);
         }
     }
 
-    //straight ahead — save original colors and sizes before any changes
+    // save original colors and sizes before any changes
     private void CacheOriginalValues()
     {
         if (uiTexts != null && uiTexts.Length > 0)
@@ -142,40 +103,28 @@ public class AccessibilityManager : MonoBehaviour
         }
     }
 
-    //straight ahead — show or hide toggle children when settings is clicked
-    private void OnSettingsClicked()
+    // handle dropdown selection, reset back to index 0
+    private void OnAccessibilityChanged(int index)
     {
-        if (bigTextToggleObj == null && contrastToggleObj == null)
+        switch (index)
         {
-            return;
+            case 1:
+                ToggleBigText();
+                break;
+            case 2:
+                ToggleContrast();
+                break;
         }
 
-        bool currentlyVisible = false;
-        if (bigTextToggleObj != null)
-        {
-            currentlyVisible = bigTextToggleObj.activeSelf;
-        }
-
-        SetTogglesVisible(!currentlyVisible);
+        // snap dropdown back to "Accessibility" label
+        accessibilityDropdown.SetValueWithoutNotify(0);
     }
 
-    //straight ahead — set both toggle objects active or inactive
-    private void SetTogglesVisible(bool visible)
+    // apply or revert big text on all ui texts
+    private void ToggleBigText()
     {
-        if (bigTextToggleObj != null)
-        {
-            bigTextToggleObj.SetActive(visible);
-        }
+        bigTextActive = !bigTextActive;
 
-        if (contrastToggleObj != null)
-        {
-            contrastToggleObj.SetActive(visible);
-        }
-    }
-
-    //straight ahead — apply or revert big text on all ui texts
-    private void OnBigTextToggled(bool isOn)
-    {
         if (uiTexts == null)
         {
             return;
@@ -188,7 +137,7 @@ public class AccessibilityManager : MonoBehaviour
                 continue;
             }
 
-            if (isOn)
+            if (bigTextActive)
             {
                 uiTexts[i].fontSize = bigFontSize;
             }
@@ -198,12 +147,14 @@ public class AccessibilityManager : MonoBehaviour
             }
         }
 
-        Debug.Log("Big Text: " + (isOn ? "ON" : "OFF"));
+        Debug.Log("Big Text: " + (bigTextActive ? "ON" : "OFF"));
     }
 
-    //straight ahead — apply or revert contrast colors on texts and backgrounds
-    private void OnContrastToggled(bool isOn)
+    // apply or revert contrast colors on texts and backgrounds
+    private void ToggleContrast()
     {
+        contrastActive = !contrastActive;
+
         if (uiTexts != null)
         {
             for (int i = 0; i < uiTexts.Length; i++)
@@ -213,7 +164,7 @@ public class AccessibilityManager : MonoBehaviour
                     continue;
                 }
 
-                if (isOn)
+                if (contrastActive)
                 {
                     uiTexts[i].color = contrastTextColor;
                 }
@@ -233,7 +184,7 @@ public class AccessibilityManager : MonoBehaviour
                     continue;
                 }
 
-                if (isOn)
+                if (contrastActive)
                 {
                     uiBackgrounds[i].color = contrastBgColor;
                 }
@@ -244,6 +195,6 @@ public class AccessibilityManager : MonoBehaviour
             }
         }
 
-        Debug.Log("Contrast Colors: " + (isOn ? "ON" : "OFF"));
+        Debug.Log("Contrast Colors: " + (contrastActive ? "ON" : "OFF"));
     }
 }

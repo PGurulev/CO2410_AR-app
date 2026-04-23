@@ -25,8 +25,12 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
     private const string OpenFabName = "AccessibilityOpenFab";
     private const string FabLayerName = "AccessibilityFabLayer";
     private const float FabSize = 200f;
+    private const float MobileReferenceWidth = 1080f;
+    private const float MobileScaleMin = 1f;
+    private const float MobileScaleMax = 2.2f;
 
     private static Sprite _fabCircleSprite;
+    private float _mobileScale = 1f;
 
     private static Sprite GetFabCircleSprite()
     {
@@ -113,13 +117,18 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
 
     private void BuildIfNeeded()
     {
+        var rootRt = transform as RectTransform;
+        if (rootRt != null)
+        {
+            _mobileScale = ComputeMobileScale(rootRt);
+        }
+
         if (transform.Find(BuiltMarker) != null)
         {
             RefreshToggleReferencesFromBuiltBox();
             return;
         }
 
-        var rootRt = transform as RectTransform;
         if (rootRt == null)
         {
             return;
@@ -166,6 +175,8 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
 
         _bigTextToggle = box.Find("Scroll View/Viewport/Content/ToggleRow/BigTextT")?.GetComponent<Toggle>();
         _contrastToggle = box.Find("Scroll View/Viewport/Content/ToggleRow/ContrastT")?.GetComponent<Toggle>();
+        ApplyExistingToggleLabelStyle(_bigTextToggle);
+        ApplyExistingToggleLabelStyle(_contrastToggle);
     }
 
     private void BuildHeader(RectTransform boxRt)
@@ -179,7 +190,16 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
         headerRt.anchoredPosition = new Vector2(0f, -56f);
         headerRt.sizeDelta = new Vector2(0f, 112f);
 
-        CreateTmpText(headerRt, "Title", "Accessibility", 52f, TextAlignmentOptions.Left, new Vector2(16f, -12f), new Vector2(-32f, 28f), titleColor, true);
+        CreateTmpText(
+            headerRt,
+            "Title",
+            "Accessibility",
+            ScaleUi(52f),
+            TextAlignmentOptions.Left,
+            new Vector2(16f, -12f),
+            new Vector2(-32f, ScaleUi(28f)),
+            titleColor,
+            true);
 
         var closeGo = new GameObject("CloseButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         var closeRt = closeGo.GetComponent<RectTransform>();
@@ -248,14 +268,23 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
         leDiv.preferredHeight = 1f;
         div.GetComponent<Image>().color = dividerColor;
 
-        CreateTmpText(contentRt, "Subtitle", "Display", 15f, TextAlignmentOptions.Left, Vector2.zero, new Vector2(0f, 22f), subtleTextColor, false);
+        CreateTmpText(
+            contentRt,
+            "Subtitle",
+            "Display",
+            ScaleUi(28f),
+            TextAlignmentOptions.Left,
+            Vector2.zero,
+            new Vector2(0f, ScaleUi(38f)),
+            subtleTextColor,
+            false);
 
         var row = new GameObject("ToggleRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
         var rowRt = row.GetComponent<RectTransform>();
         rowRt.SetParent(contentRt, false);
         var rowLe = row.AddComponent<LayoutElement>();
-        rowLe.minHeight = 96f;
-        rowLe.preferredHeight = 96f;
+        rowLe.minHeight = ScaleUi(132f);
+        rowLe.preferredHeight = ScaleUi(132f);
         var h = row.GetComponent<HorizontalLayoutGroup>();
         h.childAlignment = TextAnchor.MiddleLeft;
         h.childControlHeight = true;
@@ -265,8 +294,8 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
         h.spacing = 8f;
         h.padding = new RectOffset(4, 4, 4, 4);
 
-        _bigTextToggle = CreateToggle(rowRt, "BigTextT", "Big text", isLeftColumn: true);
-        _contrastToggle = CreateToggle(rowRt, "ContrastT", "High contrast", isLeftColumn: false);
+        _bigTextToggle = CreateToggle(rowRt, "BigTextT", "Big text", isLeftColumn: true, _mobileScale);
+        _contrastToggle = CreateToggle(rowRt, "ContrastT", "High contrast", isLeftColumn: false, _mobileScale);
 
         var scroll = scrollGo.GetComponent<ScrollRect>();
         scroll.viewport = viewportRt;
@@ -275,6 +304,48 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
         scroll.vertical = true;
         scroll.movementType = ScrollRect.MovementType.Clamped;
         scroll.scrollSensitivity = 35f;
+    }
+
+    private float ScaleUi(float value)
+    {
+        return value * _mobileScale;
+    }
+
+    private void ApplyExistingToggleLabelStyle(Toggle toggle)
+    {
+        if (toggle == null)
+        {
+            return;
+        }
+
+        var labelTmp = toggle.transform.Find("Column/Label")?.GetComponent<TextMeshProUGUI>();
+        if (labelTmp == null)
+        {
+            return;
+        }
+
+        labelTmp.fontSize = 22f * _mobileScale;
+        labelTmp.enableAutoSizing = false;
+        labelTmp.enableWordWrapping = false;
+        labelTmp.overflowMode = TextOverflowModes.Ellipsis;
+        labelTmp.alignment = TextAlignmentOptions.Left;
+    }
+
+    private static float ComputeMobileScale(RectTransform rootRt)
+    {
+        var width = Mathf.Abs(rootRt.rect.width);
+        if (width < 1f)
+        {
+            width = Screen.width;
+        }
+
+        if (width < 1f)
+        {
+            return 1f;
+        }
+
+        var scale = MobileReferenceWidth / width;
+        return Mathf.Clamp(scale, MobileScaleMin, MobileScaleMax);
     }
 
     private void WireManager()
@@ -550,8 +621,9 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
         return tmp;
     }
 
-    private static Toggle CreateToggle(RectTransform parent, string objectName, string label, bool isLeftColumn)
+    private static Toggle CreateToggle(RectTransform parent, string objectName, string label, bool isLeftColumn, float mobileScale)
     {
+        _ = isLeftColumn;
         var root = new GameObject(objectName, typeof(RectTransform), typeof(Toggle), typeof(LayoutElement));
         var rt = root.GetComponent<RectTransform>();
         rt.SetParent(parent, false);
@@ -562,32 +634,19 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
         rt.anchoredPosition = Vector2.zero;
         var leRoot = root.GetComponent<LayoutElement>();
         leRoot.flexibleWidth = 1f;
-        leRoot.minWidth = 160f;
-        leRoot.preferredHeight = 88f;
-        leRoot.minHeight = 88f;
+        leRoot.minWidth = 160f * mobileScale;
+        leRoot.preferredHeight = 124f * mobileScale;
+        leRoot.minHeight = 124f * mobileScale;
 
         var col = new GameObject("Column", typeof(RectTransform));
         var colRt = col.GetComponent<RectTransform>();
         colRt.SetParent(rt, false);
         colRt.localScale = Vector3.one;
         StretchFull(colRt);
-
-        if (isLeftColumn)
-        {
-            colRt.anchorMin = new Vector2(0f, 0f);
-            colRt.anchorMax = new Vector2(0.5f, 1f);
-            colRt.pivot = new Vector2(0.5f, 0.5f);
-            colRt.offsetMin = Vector2.zero;
-            colRt.offsetMax = new Vector2(-6f, 0f);
-        }
-        else
-        {
-            colRt.anchorMin = new Vector2(0.5f, 0f);
-            colRt.anchorMax = new Vector2(1f, 1f);
-            colRt.pivot = new Vector2(0.5f, 0.5f);
-            colRt.offsetMin = new Vector2(6f, 0f);
-            colRt.offsetMax = Vector2.zero;
-        }
+        //each toggle already occupies one row column via HorizontalLayoutGroup,
+        // so keep its inner content full-width to avoid clipping/wrapping overflow.
+        colRt.offsetMin = Vector2.zero;
+        colRt.offsetMax = Vector2.zero;
 
         var background = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         var bgRt = background.GetComponent<RectTransform>();
@@ -607,8 +666,8 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
         checkRt.anchorMin = new Vector2(0f, 0.5f);
         checkRt.anchorMax = new Vector2(0f, 0.5f);
         checkRt.pivot = new Vector2(0.5f, 0.5f);
-        checkRt.anchoredPosition = new Vector2(16f, 0f);
-        checkRt.sizeDelta = new Vector2(18f, 18f);
+        checkRt.anchoredPosition = new Vector2(16f * mobileScale, 0f);
+        checkRt.sizeDelta = new Vector2(18f * mobileScale, 18f * mobileScale);
         var checkImage = check.GetComponent<Image>();
         checkImage.color = new Color(0.10f, 0.48f, 0.95f, 1f);
 
@@ -618,11 +677,14 @@ public sealed class AccessibilitySelectUIController : MonoBehaviour
         labelRt.anchorMin = new Vector2(0f, 0f);
         labelRt.anchorMax = new Vector2(1f, 1f);
         labelRt.pivot = new Vector2(0f, 0.5f);
-        labelRt.offsetMin = new Vector2(40f, 0f);
-        labelRt.offsetMax = new Vector2(-10f, 0f);
+        labelRt.offsetMin = new Vector2(40f * mobileScale, 0f);
+        labelRt.offsetMax = new Vector2(-10f * mobileScale, 0f);
         var labelTmp = labelGo.GetComponent<TextMeshProUGUI>();
         labelTmp.text = label;
-        labelTmp.fontSize = 17f;
+        labelTmp.fontSize = 22f * mobileScale;
+        labelTmp.enableAutoSizing = false;
+        labelTmp.enableWordWrapping = false;
+        labelTmp.overflowMode = TextOverflowModes.Ellipsis;
         labelTmp.color = new Color(0.12f, 0.14f, 0.18f, 1f);
         labelTmp.alignment = TextAlignmentOptions.Left;
         labelTmp.raycastTarget = false;

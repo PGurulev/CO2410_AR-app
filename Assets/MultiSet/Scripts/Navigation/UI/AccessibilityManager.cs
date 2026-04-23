@@ -14,7 +14,7 @@ public class AccessibilityManager : MonoBehaviour
 
     [Header("Big Text settings")]
     [Tooltip("Multiplier for TMP and uGUI Text font sizes (and auto-size / best-fit bounds) when Big Text is on.")]
-    [SerializeField] private float bigTextScale = 1.5f;
+    [SerializeField] private float bigTextScale = 2.0f;
 
     [Header("Contrast settings (light-theme UI: near-black text, crisp white/light surfaces)")]
     [SerializeField] private Color contrastTextColor = new Color(0.02f, 0.02f, 0.05f, 1f);
@@ -359,7 +359,8 @@ public class AccessibilityManager : MonoBehaviour
 
         bigTextActive = isOn;
 
-        float scale = bigTextScale > 0f ? bigTextScale : 1f;
+        float bigScale = bigTextScale > 0f ? bigTextScale : 1f;
+        float scale = isOn ? bigScale : 1f;
 
         if (tmpReady)
         {

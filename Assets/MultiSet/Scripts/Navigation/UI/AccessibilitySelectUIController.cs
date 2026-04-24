@@ -766,7 +766,9 @@ public sealed class AccessibilityFabVisibilitySync : MonoBehaviour
         }
 
         var nav = NavigationUIController.instance;
-        var show = nav == null || nav.AccessibilitySelectUI == null || !nav.AccessibilitySelectUI.activeSelf;
+        var accessibilityOpen = nav != null && nav.AccessibilitySelectUI != null && nav.AccessibilitySelectUI.activeSelf;
+        var destinationOpen = nav != null && nav.DestinationSelectUI != null && nav.DestinationSelectUI.activeSelf;
+        var show = !accessibilityOpen && !destinationOpen;
         if (fab.gameObject.activeSelf != show)
         {
             fab.gameObject.SetActive(show);

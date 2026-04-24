@@ -29,9 +29,21 @@ public class SelectList : MonoBehaviour
         PrepareAllData();
     }
 
+    private void OnEnable()
+    {
+        // Destination Select can be toggled at runtime; refresh POIs when shown so list
+        // does not depend on script execution order during scene load.
+        EnsureDataReady();
+    }
+
     void PrepareAllData()
     {
         pois = new List<ListItemData>();
+
+        if (NavigationController.instance == null || NavigationController.instance.augmentedSpace == null)
+        {
+            return;
+        }
 
         foreach (var poi in NavigationController.instance.augmentedSpace.GetPOIs())
         {
@@ -39,8 +51,27 @@ public class SelectList : MonoBehaviour
         }
     }
 
+    private void EnsureDataReady()
+    {
+        if (pois == null || pois.Count == 0)
+        {
+            PrepareAllData();
+        }
+
+        if (currentItemsTotal == null)
+        {
+            currentItemsTotal = new List<ListItemData>(pois);
+        }
+    }
+
     public void RenderPOIs()
     {
+        EnsureDataReady();
+        var total = pois != null ? pois.Count : -1;
+        var current = currentItemsTotal != null ? currentItemsTotal.Count : -1;
+        var hasNav = NavigationController.instance != null;
+        var hasSpace = hasNav && NavigationController.instance.augmentedSpace != null;
+        Debug.Log($"[SelectList] RenderPOIs -> pois={total}, currentItemsTotal={current}, nav={hasNav}, augmentedSpace={hasSpace}");
         // render list
         RenderList(pois);
         currentItemsTotal = pois;
@@ -91,6 +122,7 @@ public class SelectList : MonoBehaviour
      */
     public void ResetPOISearch()
     {
+        EnsureDataReady();
         searchField.text = "";
         resetButtonSearchField.SetActive(false);
         RenderList(currentItemsTotal);
@@ -127,6 +159,7 @@ public class SelectList : MonoBehaviour
      */
     List<ListItemData> FilterByTitle(string searchTerm)
     {
+        EnsureDataReady();
         string search = searchTerm.ToLower();
         List<ListItemData> filteredItems = currentItemsTotal.FindAll(x =>
         {

@@ -4,131 +4,170 @@ using UnityEngine.UI;
 
 public class AccessibilityManager : MonoBehaviour
 {
-    // accessibility dropdown reference
-    [Header("Accessibility Dropdown")]
-    [SerializeField] private TMP_Dropdown accessibilityDropdown;
+    [Header("Toggles")]// main toggles for accessibility buttons
+    [SerializeField] private Toggle bigTextToggle;
+    [SerializeField] private Toggle contrastToggle;
 
-    // all TMP texts and UI backgrounds affected by accessibility
-    [Header("UI elements")]
-    [SerializeField] private TMP_Text[] uiTexts;
-    [SerializeField] private Image[] uiBackgrounds;
+    [Header("Target Canvas (auto-found if empty)")]
+    [SerializeField] private Canvas targetCanvas;
 
-    // font sizes for normal and big text modes
     [Header("Big Text settings")]
-    [SerializeField] private float normalFontSize = 14f;
-    [SerializeField] private float bigFontSize = 24f;
+    [Tooltip("Multiplier applied to every TMP_Text fontSize when Big Text is on.")]
+    [SerializeField] private float bigTextScale = 1.5f;
 
-    // colors for contrast mode
     [Header("Contrast settings")]
     [SerializeField] private Color contrastTextColor = Color.yellow;
     [SerializeField] private Color contrastBgColor = Color.black;
 
+    private TMP_Text[] uiTexts;
+    private Image[] uiBackgrounds;
+    private float[] originalFontSizes;
     private Color[] originalTextColors;
     private Color[] originalBgColors;
-    private float[] originalFontSizes;
+
     private bool bigTextActive;
     private bool contrastActive;
 
-    // find dropdown by name, populate options, subscribe
     void Start()
     {
-        if (accessibilityDropdown == null)
+        ResolveReferences();
+        CacheCanvasContent();
+        SubscribeToggles();
+    }
+
+    void OnDestroy()
+    {
+        if (bigTextToggle != null)
         {
-            GameObject obj = GameObject.Find("AccessibilityDropdown");
+            bigTextToggle.onValueChanged.RemoveListener(OnBigTextChanged);
+        }
+        if (contrastToggle != null)
+        {
+            contrastToggle.onValueChanged.RemoveListener(OnContrastChanged);
+        }
+    }
+
+    private void ResolveReferences()
+    {
+        if (bigTextToggle == null)
+        {
+            GameObject obj = GameObject.Find("BigTextT");
             if (obj != null)
             {
-                accessibilityDropdown = obj.GetComponent<TMP_Dropdown>();
+                bigTextToggle = obj.GetComponent<Toggle>();
             }
         }
 
-        if (accessibilityDropdown != null)
+        if (contrastToggle == null)
         {
-            accessibilityDropdown.ClearOptions();
-            accessibilityDropdown.AddOptions(new System.Collections.Generic.List<string>
+            GameObject obj = GameObject.Find("ContrastT");
+            if (obj != null)
             {
-                "Accessibility",
-                "Big Text",
-                "Contrast Colors"
-            });
-            accessibilityDropdown.onValueChanged.AddListener(OnAccessibilityChanged);
+                contrastToggle = obj.GetComponent<Toggle>();
+            }
+        }
+
+        if (targetCanvas == null)
+        {
+            GameObject obj = GameObject.Find("Canvas");
+            if (obj != null)
+            {
+                targetCanvas = obj.GetComponent<Canvas>();
+            }
+        }
+
+        if (targetCanvas == null)
+        {
+            targetCanvas = FindFirstObjectByType<Canvas>();
+        }
+    }
+
+    private void CacheCanvasContent()
+    {
+        if (targetCanvas == null)
+        {
+            Debug.LogError("AccessibilityManager: Canvas not found.");
+            return;
+        }
+
+        uiTexts = targetCanvas.GetComponentsInChildren<TMP_Text>(true);
+        uiBackgrounds = targetCanvas.GetComponentsInChildren<Image>(true);
+
+        originalFontSizes = new float[uiTexts.Length];
+        originalTextColors = new Color[uiTexts.Length];
+        for (int i = 0; i < uiTexts.Length; i++)
+        {
+            if (uiTexts[i] == null)
+            {
+                continue;
+            }
+            originalFontSizes[i] = uiTexts[i].fontSize;
+            originalTextColors[i] = uiTexts[i].color;
+        }
+
+        originalBgColors = new Color[uiBackgrounds.Length];
+        for (int i = 0; i < uiBackgrounds.Length; i++)
+        {
+            if (uiBackgrounds[i] == null)
+            {
+                continue;
+            }
+            originalBgColors[i] = uiBackgrounds[i].color;
+        }
+    }
+
+    private void SubscribeToggles()
+    {
+        if (bigTextToggle != null)
+        {
+            bigTextToggle.onValueChanged.AddListener(OnBigTextChanged);
+            // sync internal state with current toggle value without triggering scaling twice
+            bigTextActive = false;
+            if (bigTextToggle.isOn)
+            {
+                ApplyBigText(true);
+            }
         }
         else
         {
-            Debug.LogError("AccessibilityManager: AccessibilityDropdown not found.");
+            Debug.LogError("AccessibilityManager: BigTextT toggle not found.");
         }
 
-        CacheOriginalValues();
-    }
-
-    // remove listener on destroy
-    void OnDestroy()
-    {
-        if (accessibilityDropdown != null)
+        if (contrastToggle != null)
         {
-            accessibilityDropdown.onValueChanged.RemoveListener(OnAccessibilityChanged);
-        }
-    }
-
-    // save original colors and sizes before any changes
-    private void CacheOriginalValues()
-    {
-        if (uiTexts != null && uiTexts.Length > 0)
-        {
-            originalTextColors = new Color[uiTexts.Length];
-            originalFontSizes = new float[uiTexts.Length];
-
-            for (int i = 0; i < uiTexts.Length; i++)
+            contrastToggle.onValueChanged.AddListener(OnContrastChanged);
+            contrastActive = false;
+            if (contrastToggle.isOn)
             {
-                if (uiTexts[i] == null)
-                {
-                    continue;
-                }
-                originalTextColors[i] = uiTexts[i].color;
-                originalFontSizes[i] = uiTexts[i].fontSize;
-            }
-        }
-
-        if (uiBackgrounds != null && uiBackgrounds.Length > 0)
-        {
-            originalBgColors = new Color[uiBackgrounds.Length];
-
-            for (int i = 0; i < uiBackgrounds.Length; i++)
-            {
-                if (uiBackgrounds[i] == null)
-                {
-                    continue;
-                }
-                originalBgColors[i] = uiBackgrounds[i].color;
+                ApplyContrast(true);
             }
         }
     }
 
-    // handle dropdown selection, reset back to index 0
-    private void OnAccessibilityChanged(int index)
+    private void OnBigTextChanged(bool isOn)
     {
-        switch (index)
-        {
-            case 1:
-                ToggleBigText();
-                break;
-            case 2:
-                ToggleContrast();
-                break;
-        }
-
-        // snap dropdown back to "Accessibility" label
-        accessibilityDropdown.SetValueWithoutNotify(0);
+        ApplyBigText(isOn);
     }
 
-    // apply or revert big text on all ui texts
-    private void ToggleBigText()
+    private void OnContrastChanged(bool isOn)
     {
-        bigTextActive = !bigTextActive;
+        ApplyContrast(isOn);
+    }
 
-        if (uiTexts == null)
+    private void ApplyBigText(bool isOn)
+    {
+        if (uiTexts == null || originalFontSizes == null)
         {
             return;
         }
+
+        if (isOn == bigTextActive)
+        {
+            return;
+        }
+        bigTextActive = isOn;
+
+        float scale = bigTextScale > 0f ? bigTextScale : 1f;
 
         for (int i = 0; i < uiTexts.Length; i++)
         {
@@ -137,9 +176,9 @@ public class AccessibilityManager : MonoBehaviour
                 continue;
             }
 
-            if (bigTextActive)
+            if (isOn)
             {
-                uiTexts[i].fontSize = bigFontSize;
+                uiTexts[i].fontSize = originalFontSizes[i] * scale;//multiply the original font size by the scale
             }
             else
             {
@@ -147,13 +186,16 @@ public class AccessibilityManager : MonoBehaviour
             }
         }
 
-        Debug.Log("Big Text: " + (bigTextActive ? "ON" : "OFF"));
+        Debug.Log("Big Text: " + (isOn ? "ON" : "OFF"));
     }
 
-    // apply or revert contrast colors on texts and backgrounds
-    private void ToggleContrast()
+    private void ApplyContrast(bool isOn)
     {
-        contrastActive = !contrastActive;
+        if (isOn == contrastActive)
+        {
+            return;
+        }
+        contrastActive = isOn;
 
         if (uiTexts != null)
         {
@@ -164,7 +206,7 @@ public class AccessibilityManager : MonoBehaviour
                     continue;
                 }
 
-                if (contrastActive)
+                if (isOn)
                 {
                     uiTexts[i].color = contrastTextColor;
                 }
@@ -184,7 +226,7 @@ public class AccessibilityManager : MonoBehaviour
                     continue;
                 }
 
-                if (contrastActive)
+                if (isOn)
                 {
                     uiBackgrounds[i].color = contrastBgColor;
                 }
@@ -195,6 +237,6 @@ public class AccessibilityManager : MonoBehaviour
             }
         }
 
-        Debug.Log("Contrast Colors: " + (contrastActive ? "ON" : "OFF"));
+        Debug.Log("Contrast: " + (isOn ? "ON" : "OFF"));
     }
 }

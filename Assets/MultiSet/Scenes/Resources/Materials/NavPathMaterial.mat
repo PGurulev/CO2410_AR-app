@@ -79,11 +79,7 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-<<<<<<< HEAD
-    - _PathLength: 41
-=======
-    - _PathLength: 43
->>>>>>> 4b45057856c34aa08b0bf4e535b467dec2c28d73
+    - _PathLength: 2
     - _ScrollSpeed: -1.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

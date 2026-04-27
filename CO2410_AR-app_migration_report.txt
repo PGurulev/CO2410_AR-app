@@ -1,0 +1,184 @@
+================================================================================
+CO2410_AR-app — Migration report (objects & configuration)
+Standalone text (~3–4 pages when printed). Not merged into CO2410_AR-app_mini_report.docx.
+================================================================================
+
+Migrating objects from the CO2410_AR-app navigation prototype
+--------------------------------------------------------------
+
+This document describes how to migrate the functional prototype implemented in the CO2410_AR-app Unity project into a target application (for example a consolidated coursework deliverable, a second repository, or a production-oriented fork). The prototype focuses on AR-assisted navigation, a minimal UI workflow, accessibility toggles, and lightweight audio feedback.
+
+Migration is a controlled transfer of assets and configuration, not a blind copy of the whole Assets folder. AR Foundation, NavMesh baking, XR Origin wiring, and TextMeshPro must stay consistent between source and destination projects.
+
+
+1. Objectives and scope
+-----------------------
+
+Primary objective: preserve behaviour already validated in the prototype: destination selection, path computation relative to the AR camera, route visualisation, optional accessibility adjustments, and user feedback.
+
+In scope:
+- First-party scripts under Assets (e.g. ARPathFinder.cs, NavigationManager.cs, StartButtonManager.cs, AccessibilityManager.cs, SFXScript.cs).
+- Main working scene: Assets/Scenes/SampleScene.unity.
+- Package dependencies in Packages/manifest.json (notably com.unity.xr.arfoundation, com.unity.xr.arcore, com.unity.xr.arkit, com.unity.ai.navigation, com.unity.render-pipelines.universal, com.unity.ugui, and related XR packages).
+- Custom prefabs at the root of Assets when they are part of your demo (e.g. BuildingPrefab.prefab, Kitchen_13ftx9ft 1.prefab).
+
+Out of scope unless you explicitly need them:
+- Wholesale duplication of vendor content under Assets/UnityXRContent and large TextMesh Pro example packs (they inflate build size and complicate version control).
+
+
+2. Inventory: what to migrate vs what to leave
+----------------------------------------------
+
+Recommended minimum (migratable core):
+- All custom MonoBehaviour scripts that implement navigation and UI.
+- SampleScene (or an exported variant) and any small dependent folders you actually reference.
+- Custom prefabs authored for this module.
+- Assets/XR if the prototype depends on ARCore runtime settings or simulation preferences.
+- Assets/Settings if the target project must match the same URP configuration.
+- ProjectSettings affecting Android/iOS AR capabilities — usually re-applied after package import rather than raw file merge from another repo.
+
+Conditionally migratable:
+- UnityXRContent simulation environments: this repo references com.unity.xr-content.xr-sim-environments via a local .tgz under ContentPackages. Migrate package + content together if you need Editor/device simulation of indoor layouts. If you only need on-device AR, omit simulation prefabs and remove scene references to reduce clutter.
+
+Do not migrate blindly:
+- Library, Temp, Logs, UserSettings.
+- Regenerated .csproj / .slnx files.
+- Third-party examples not referenced by your scene.
+
+
+3. Preconditions and version alignment
+--------------------------------------
+
+Before moving assets:
+- Record the Unity Editor version used for the prototype. Match major.minor in the destination project where possible. AR Foundation 6.x and URP 17.x imply a recent Unity 6 line; forcing the same packages into Unity 2022 LTS may fail API or package resolution.
+- Align Input System settings if both projects use the new Input System package.
+- Ensure XR Plug-in Management in the destination project enables Android ARCore and/or iOS ARKit as required. C# migration alone does not enable platform providers.
+
+TextMeshPro:
+- In a fresh project, import TMP essential resources once. Scripts use TMP_Dropdown and TMP_Text; missing TMP resources cause pink materials or console errors after migration.
+
+
+4. Migration strategies
+-----------------------
+
+Strategy A — Unity package export (preferred for coursework hand-off):
+In the prototype project, select custom scripts, SampleScene, custom root prefabs, and small dependent folders, then Assets > Export Package. Import the .unitypackage into the target project and resolve warnings immediately. Preserves .meta files and GUIDs inside the exported set.
+
+Strategy B — Git submodule or folder copy:
+Copy a dedicated subtree (e.g. Assets/_CO2410Navigation/) including .meta files. Re-add the scene in Build Settings. Requires path discipline so YAML scene references remain valid.
+
+Strategy C — Manual rebuild in target scene:
+Import only scripts and prefabs, then recreate XR Origin, Canvas hierarchy, EventSystem, and NavMesh surfaces using a written checklist. Slower but cleanest when the destination project has a different UI layout or naming convention.
+
+
+5. Detailed procedure (recommended order)
+-----------------------------------------
+
+Step 1 — Packages:
+Add matching package versions from the prototype manifest, especially AR Foundation, ARCore/ARKit, AI Navigation, and URP. Restart the Editor if Unity prompts.
+
+Step 2 — Scripts:
+Import the five core behaviours. Fix namespace collisions if class names clash. Prefer a single folder (e.g. Assets/CO2410/Navigation/) to isolate the module.
+
+Step 3 — Scene objects:
+Import SampleScene or merge its hierarchy. Confirm XR Origin exists and ARPathFinder can resolve the camera via XROrigin.Camera. Confirm AR Session and any trackable managers you rely on (planes, images, etc.).
+
+Step 4 — UI graph:
+Several scripts locate UI by GameObject name (DestinationDropdown, Startbutton, AccessibilityDropdown). After migration, verify exact spelling and casing in the hierarchy. SampleScene includes Startbutton, DestinationDropdown, Canvas, XR Origin, and AR Session. If AccessibilityDropdown is missing or renamed, AccessibilityManager will log errors at runtime until you align names or switch to serialized references.
+
+Step 5 — NavigationManager destinations:
+Repoint the public List<Transform> destinations to waypoint transforms in the target scene. Prefer empty GameObjects with clear names rather than mesh roots so art swaps do not break references.
+
+Step 6 — ARPathFinder:
+Ensure a LineRenderer is present on the same GameObject as ARPathFinder (or assigned). Re-tune navMeshSampleRadius and requireCompletePath after rebaking NavMesh.
+
+Step 7 — NavMesh:
+Rebake NavMesh for target geometry. Paths use NavMesh.SamplePosition and NavMesh.CalculatePath; without a baked mesh, the line clears and navigation looks broken even if AR tracking works.
+
+Step 8 — Audio:
+Migrate AudioClip references for SFXScript and ensure an AudioSource exists, or accept PlayClipAtPoint fallback behaviour.
+
+Step 9 — AccessibilityManager:
+Assign arrays of TMP_Text and Image in the Inspector explicitly so migrated prefabs work when instantiated in other scenes, instead of relying only on scene-wide discovery.
+
+
+6. Prefab and environment objects
+---------------------------------
+
+Migrate custom root prefabs (BuildingPrefab, Kitchen_13ftx9ft 1, customised AR Default Plane) if the scene references them. After import, check for missing materials if URP assets differ.
+
+For simulation-only meshes used in Editor testing, decide whether they ship in player builds; strip non-essential scenes from the Android/iOS build list if they are not part of the final user experience.
+
+
+7. Risks, mitigations, and validation checklist
+-----------------------------------------------
+
+Risk — broken script references after import:
+Mitigation: export with .meta files; import into a compatible Unity generation.
+Validation: zero missing scripts; clean console on Play in Editor (with XR simulation if used).
+
+Risk — name-based Find lookups fail silently:
+Mitigation: standardise names or refactor to [SerializeField] references.
+Validation: one play-mode pass confirming each manager subscribes to UI events.
+
+Risk — NavMesh mismatch in new geometry:
+Mitigation: document bake parameters (agent radius, step height); re-test path completeness.
+Validation: for each destination index, confirm PathComplete when requireCompletePath is true.
+
+Risk — oversized repository from UnityXRContent:
+Mitigation: exclude non-essential environments from export packages.
+Validation: compare Android APK size before and after stripping.
+
+Checklist summary:
+Packages aligned | TMP imported | XR plug-ins enabled | scene wired | NavMesh baked | UI names verified | route line visible | accessibility round-trip | SFX on dropdown change | device build succeeds.
+
+
+8. Conclusion
+-------------
+
+Treat migration as a small, bounded module: scripts + scene wiring + NavMesh + XR prerequisites. The highest return is verification (UI names, NavMesh, AR camera resolution) rather than rewriting core logic. Capture screenshots and a short device recording for presentation evidence.
+
+
+9. Team hand-off, traceability, and agile artefacts
+---------------------------------------------------
+
+Time-box each migration attempt as a sprint deliverable. Backlog acceptance criteria: import without errors; play mode navigation for every destination; accessibility toggles restore originals; device build installs.
+
+Assign owners: package parity, scene merge, shared QA checklist. Store the .unitypackage hash or branch revision in an appendix so assessors can tie the report to a concrete commit.
+
+If multiple authors edit one scene, use Smart Merge or a single scene owner per sprint to reduce YAML merge conflicts.
+
+Version control: ignore Library/Temp; commit .meta with new assets. Avoid renaming GameObjects in SampleScene without team notice (serialized references and string Find both break).
+
+
+10. Build settings, performance, and release notes
+------------------------------------------------
+
+After migration, revisit Player Settings: orientation, Android min API, iOS camera usage strings, IL2CPP where required.
+
+Profile on a mid-range phone: transparent UI overdraw and per-frame NavMesh solves can cause heat throttling. If ARPathFinder runs every Update, document that choice; consider throttling path solves to 5–10 Hz if profiling shows spikes.
+
+Document default SFX volume and whether a master mute is needed for demos.
+
+
+11. Appendix — prototype touchpoints in this repository
+-------------------------------------------------------
+
+Scripts (Assets root):
+  ARPathFinder.cs, NavigationManager.cs, StartButtonManager.cs, AccessibilityManager.cs, SFXScript.cs
+
+Primary scene:
+  Assets/Scenes/SampleScene.unity
+  (includes AR Session, XR Origin, Canvas, Startbutton, DestinationDropdown, controllers such as StartController / Start_ofStartButtonManager)
+
+Example custom prefabs (repo root):
+  BuildingPrefab.prefab, Kitchen_13ftx9ft 1.prefab
+
+Package anchors (see Packages/manifest.json):
+  AR Foundation 6.3.3, ARCore/ARKit 6.3.3, AI Navigation 2.0.11, URP 17.3.0, optional local XR simulation via ContentPackages .tgz
+
+Use this appendix as a pick list when exporting a minimal migration package.
+
+================================================================================
+End of report
+================================================================================

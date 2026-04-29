@@ -40,4 +40,4 @@
 
 [x] Final Release — Final polishing, bug fixing, and build deployment.
 
-[ ] Presentation of Project — Preparing presentation materials and final showcase.
+[x] Presentation of Project — Preparing presentation materials and final showcase.
